@@ -20,57 +20,67 @@ def used_color():
     
 
 def wherethefolder(): #抓取路徑位置
+
     global input_name,seq_name,long_name,output_folder
-    files = filedialog.askopenfilename(filetypes=[('image','.png'),('images','.jpg')])
+    files = filedialog.askopenfilename(filetypes=[('All Supported Files', '*.png;*.jpg;*.mp4')])
     output_folder = os.path.dirname(files)
     Fullpath = files.split('/')  #分割成多塊的序列
     long_name = Fullpath[-1] #完整名字
 
-    if "_" not in long_name:
-    # 如果字符串中不包含特定的字，执行相关操作
-        messagebox.showinfo('Error','圖片序列錯誤')
-    else:
+    if files.endswith(".png"):
         show_longname.set(long_name) #將文字方框設為完整名字
         seq_name = (long_name.split('_')[-2]) #將完整名字拆分為只有短名
         print (files,output_folder,seq_name)
         input_name = (seq_name + '_%05d.png')
 
-    
+    elif files.endswith(".jpg"):
+        show_longname.set(long_name) #將文字方框設為完整名字
+        seq_name = (long_name.split('_')[-2]) #將完整名字拆分為只有短名
+        print (files,output_folder,seq_name)
+        input_name = (seq_name + '_%05d.jpg')
+
+    elif files.endswith(".mp4"):
+        show_longname.set(long_name) #將文字方框設為完整名字
+        seq_name = (long_name.split('.')[-2])
+        print (files,output_folder,seq_name)
+        input_name = long_name
+
+    else:
+        # 如果字符串中不包含特定的字，执行相关操作
+        messagebox.showinfo('Error','圖片序列錯誤')
+
     
 def convert_to_gif():
-    try:
-        output_filename =  (seq_name+'.webp') 
-        fps_value = fps.get()
-        cps_value = crf.get()
-        fps_str = (f"\"fps={fps_value}\"")
-        print(fps_str,input_name,output_filename,seq_name,long_name)
+    
+    output_filename =  (seq_name+'.webp') 
+    fps_value = fps.get()
+    cps_value = crf.get()
+    fps_str = (f"\"fps={fps_value}\"")
+    print(fps_str,input_name,output_filename,seq_name,long_name)
 
-        # 使用 FFmpeg 轉換圖片序列為 GIF
-        command = [
-            'ffmpeg',
-            '-i',input_name , 
-            '-r',str(fps_value),
-            '-q:v',str(cps_value),
-            '-y',
-            '-loop','0',
-            output_filename
-        ]
+    # 使用 FFmpeg 轉換圖片序列為 GIF
+    command = [
+        'ffmpeg',
+        '-i',input_name , 
+        '-r',str(fps_value),
+        '-q:v',str(cps_value),
+        '-y',
+        '-loop','0',
+        output_filename
+    ]
 
-        os.chdir(output_folder)
+    os.chdir(output_folder)
 
-        print (command)
+    print (command)
 
-        subprocess.run(command, check=True)
+    subprocess.run(command, check=True)
 
-        os.startfile(output_folder)
+    os.startfile(output_folder)
 
-        messagebox.showinfo('Successful','轉檔成功!')
+    subprocess.Popen(['open', output_folder])
 
-       
+    messagebox.showinfo('Successful','轉檔成功!')
 
-
-    except :
-        messagebox.showinfo('Error','轉檔錯誤...')
    
     
 root = tk.Tk()
@@ -95,7 +105,7 @@ btn_folderpath.pack(padx=5,pady=5)
 
 #位置顯示框
 show_longname = tk.StringVar()
-entry_folder = tk.Entry(frame_top,textvariable=show_longname,fg='green')
+entry_folder = tk.Entry(frame_top,textvariable=show_longname,fg='green',state='disabled')
 entry_folder.pack(fill='x',padx=5,pady=5,ipadx=5,ipady=5)
 used_color()
 
