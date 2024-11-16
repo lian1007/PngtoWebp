@@ -14,6 +14,8 @@ time_limit = datetime.datetime(2025, 10, 6)
 # 取得當前時間
 current_time = datetime.datetime.now()
 
+drag_name = "" 
+
 def safe_compress():
     value = crf.get()
     if 20 <= value <= 50:
@@ -23,50 +25,54 @@ def safe_compress():
     else:
         crf_spinbox.config(fg="black")
 
-def used_color():
-    if "_" in entry_folder.get():
-        print('66')
-    
-def wherethefolder(event):  # 加入 event 參數，以便用於拖放事件
-    global input_name, seq_name, long_name, output_folder
+def wherethefolder(event=None):  # 加入 event 參數，以便用於拖放事件
+    global input_name, seq_name, drag_name, output_folder
+
     if event:  # 如果是來自拖放事件，使用 event.data
-        files = event.data
-    else:  # 否則使用檔案對話框
+        files = event.data.strip("{}")  # 去除大括號
+        print(55)
+    else:
         files = filedialog.askopenfilename(filetypes=[('All Supported Files', '*.png;*.jpg;*.mp4')])
     if not files:  # 如果沒有選擇文件，則返回
         return
     
     output_folder = os.path.dirname(files)  # 獲取文件所在的資料夾
     Fullpath = files.split('/')  # 分割成多塊的序列
-    long_name = Fullpath[-1]  # 完整的檔案名
+    drag_name = Fullpath[-1]  # 完整的檔案名
 
-    if files.endswith(".png"):
-        show_longname.set(long_name)  # 將文字框設為完整檔名
-        seq_name = long_name.split('_')[-2]  # 獲取短名稱
+    print(output_folder,Fullpath,drag_name)
+
+    if drag_name.endswith(".png"):
+        show_longname.set(drag_name)  # 將文字框設為完整檔名
+        seq_name = drag_name.split('_')[-2]  # 獲取短名稱
         print(files, output_folder, seq_name)
         input_name = seq_name + '_%05d.png'
 
-    elif files.endswith(".jpg"):
-        show_longname.set(long_name)  # 將文字框設為完整檔名
-        seq_name = long_name.split('_')[-2]  # 獲取短名稱
+    elif drag_name.endswith(".jpg"):
+        show_longname.set(drag_name)  # 將文字框設為完整檔名
+        seq_name = drag_name.split('_')[-2]  # 獲取短名稱
         print(files, output_folder, seq_name)
         input_name = seq_name + '_%05d.jpg'
 
-    elif files.endswith(".mp4"):
-        show_longname.set(long_name)  # 將文字框設為完整檔名
-        seq_name = long_name.split('.')[-2]  # 獲取檔名
+    elif drag_name.endswith(".mp4"):
+        show_longname.set(drag_name)  # 將文字框設為完整檔名
+        seq_name = drag_name.split('.')[-2]  # 獲取檔名
         print(files, output_folder, seq_name)
-        input_name = long_name
+        input_name = drag_name
 
     else:
         messagebox.showinfo('Error', '選取輸入值錯誤')
 
 def convert_to_webp():
+    if not drag_name:
+        messagebox.showerror("錯誤", "無序列圖檔，請選擇檔案後再嘗試。")
+        return
+    
     output_filename =  (seq_name+'.webp') 
     fps_value = fps.get()
     cps_value = crf.get()
     fps_str = (f"\"fps={fps_value}\"")
-    print(fps_str,input_name,output_filename,seq_name,long_name)
+    print(fps_str,input_name,output_filename,seq_name,drag_name)
 
     # 使用 FFmpeg 轉換圖片序列為 GIF
     command = [
@@ -96,11 +102,11 @@ def convert_to_webp():
 
     messagebox.showinfo('Successful', '轉檔並移動檔案成功！')
 
-def on_drop(event):
-    # 取得拖曳的文件路徑
-    file_path = event.data
-    if os.path.isdir(file_path):  # 檢查是否是有效的文件夾路徑
-        show_longname.set(file_path)  # 顯示路徑
+# def on_drop(event):
+#     # 取得拖曳的文件路徑
+#     file_path = event.data
+#     if os.path.isdir(file_path):  # 檢查是否是有效的文件夾路徑
+#         show_longname.set(file_path)  # 顯示路徑
 
 
 # 判斷是否超過時間限制
@@ -119,12 +125,12 @@ else:
 
 
 root = TkinterDnD.Tk()
-root.geometry("400x280")
+root.geometry("400x280+400+200")
 root.title("林立需要轉webp")
         
 #置頂框架
-frame_top = tk.Frame(root)
-frame_top.pack(side="top",fill='x',padx=15,pady=10)
+frame_top = tk.Frame(root,height=10)
+frame_top.pack(side="top",fill='x', expand=True, padx=30,pady=15,ipadx=15)
 
 # 設定拖放功能到按鈕或框架
 frame_top.drop_target_register(DND_FILES)
@@ -133,18 +139,17 @@ frame_top.dnd_bind('<<Drop>>', wherethefolder)
 #抓取位置按鈕
 btn_folderpath =tk.Button(frame_top,
                 font=font_style,
-                text="選取序列",
+                text=" 選取序列 ",
                 bg='#FFFFFF',
                 relief='flat',
                 command=wherethefolder,
                 )
-btn_folderpath.pack(padx=5,pady=5)
+btn_folderpath.pack(padx=5,pady=7)
 
 #位置顯示框
 show_longname = tk.StringVar()
 entry_folder = tk.Entry(frame_top,textvariable=show_longname,fg='green',state='disabled')
-entry_folder.pack(fill='x',padx=5,pady=5,ipadx=5,ipady=5)
-used_color()
+entry_folder.pack(fill='x',padx=5,pady=5,ipadx=15,ipady=5)
 
 
 #中間框架
@@ -202,8 +207,7 @@ btn_convert_to_gif = tk.Button(frame_mid2,
                     text="轉換為WEBP",
                     command=convert_to_webp,
                     relief='flat',
+                    height='3',
                     bg='white'
-                    ).pack(side="top", padx=5, pady=5)
-
-
+                    ).pack(side="top", fill='x', expand=True, padx=5, pady=5)
 root.mainloop()
