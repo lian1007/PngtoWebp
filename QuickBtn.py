@@ -103,6 +103,68 @@ def create_scaling_sequence(input_file, output_dir, frame_rate=24):
         cropped_img.save(output_file)
         print(f"Saved: {output_file}")
 
+def create_tooglescaling_sequence(input_file, output_dir, frame_rate=24):
+    """
+    根據指定的動畫生成縮放序列圖片，並保存為 PNG 格式。
+    
+    :param input_file: 輸入的 PNG 文件路徑
+    :param output_dir: 輸出的文件夾路徑
+    :param frame_rate: 每秒幀數（默認 24 fps）
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # 加載圖片
+    img = Image.open(input_file)
+    width, height = img.size
+
+    # 定義動畫的縮放關鍵幀
+    keyframes = {
+        0: 100,    # 0 秒，100%
+        0.5: 91,   # 0.5 秒，91%
+        1: 100     # 1 秒，100%
+    }
+
+    # 總幀數
+    total_frames = int(1 * frame_rate)  # 1 秒的動畫
+
+    # 計算每幀的縮放比例
+    scale_values = []
+    for frame in range(total_frames + 1):  # +1 確保最後一幀也包含
+        time = frame / frame_rate
+
+        # 根據時間設置縮放值
+        if time < 0.5:
+            scale = keyframes[0]  # 保持 100%
+        elif time < 1:
+            scale = keyframes[0.5]  # 突然變成 91%
+        else:
+            scale = keyframes[1]  # 突然回到 100%
+
+        scale_values.append(scale)
+
+    # 按照計算的縮放比例生成序列圖片
+    for frame, scale in enumerate(scale_values):
+        new_width = int(width * scale / 100)
+        new_height = int(height * scale / 100)
+
+        # 縮放圖片
+        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # 中心裁剪為原始大小
+        crop_box = (
+            (new_width - width) // 2,
+            (new_height - height) // 2,
+            (new_width + width) // 2,
+            (new_height + height) // 2
+        )
+        cropped_img = resized_img.crop(crop_box)
+
+        # 保存圖片
+        output_file = os.path.join(output_dir, f"frame_{frame:03d}.png")
+        cropped_img.save(output_file)
+        print(f"Saved: {output_file}")
+
 
 def convert_to_webp(input_dir, output_file):
     """ 使用 FFmpeg 將 PNG 圖片序列轉換為 WebP 格式 """
@@ -121,10 +183,15 @@ def convert_to_webp(input_dir, output_file):
     print(f"WebP 文件已生成：{output_file}")
 
 
-def convert_to_webp_action():
+def stop_webp_action():
     output_dir = os.path.join(output_folder, "scaled_frames")
     output_webp = os.path.join(output_folder, f"{seq_name}_animation.webp")
+    create_tooglescaling_sequence(input_file, output_dir)  # 生成縮放序列
+    convert_to_webp(output_dir, output_webp)  # 轉換為 WebP
     
+def scale_webp_action():
+    output_dir = os.path.join(output_folder, "scaled_frames")
+    output_webp = os.path.join(output_folder, f"{seq_name}_animation.webp")
     create_scaling_sequence(input_file, output_dir)  # 生成縮放序列
     convert_to_webp(output_dir, output_webp)  # 轉換為 WebP
 
@@ -142,12 +209,12 @@ else:
 
 # 主 GUI
 root = TkinterDnD.Tk()
-root.geometry("400x280")
+root.geometry("300x250")
 root.title("林立需要轉webp")
 
 # 置頂框架
 frame_top = tk.Frame(root)
-frame_top.pack(side="top", fill='x', padx=15, pady=10)
+frame_top.pack(side="top", fill='x', padx=15, pady=10,expand=True)
 
 # 設定拖放功能到按鈕或框架
 frame_top.drop_target_register(DND_FILES)
@@ -169,17 +236,30 @@ entry_folder = tk.Entry(frame_top, textvariable=show_longname, fg='green', state
 entry_folder.pack(fill='x', padx=5, pady=5, ipadx=5, ipady=5)
 
 # 按鈕框架
-frame_mid2 = tk.Frame(root)
-frame_mid2.pack(side="top", padx=5, pady=5)
+frame_mid2 = tk.Frame(root,bg="#e5e5e5",height="30")
+frame_mid2.pack(side="top", padx=5, pady=5,fill="x")
+
+frame_btn = tk.Frame(frame_mid2) 
+frame_btn.pack(side="top", padx=5, pady=5)
 
 # 新增轉換按鈕
-btn_convert_to_webp = tk.Button(frame_mid2,
+btn_convert_to_webp = tk.Button(frame_btn,
                     font=font_style,
-                    text="製作按鈕",
-                    command=convert_to_webp_action,
+                    text="縮放按鈕",
+                    command=scale_webp_action,
                     relief='flat',
                     bg='white'
                     )
-btn_convert_to_webp.pack(side="top", padx=5, pady=5)
+btn_convert_to_webp.pack(side="left", padx=5, pady=5)
+
+# 新增轉換按鈕
+btn_convert_to_webp = tk.Button(frame_btn,
+                    font=font_style,
+                    text="彈跳按鈕",
+                    command=stop_webp_action,
+                    relief='flat',
+                    bg='white'
+                    )
+btn_convert_to_webp.pack(side="left", padx=5, pady=5)
 
 root.mainloop()
