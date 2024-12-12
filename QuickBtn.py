@@ -6,6 +6,7 @@ from tkinter import filedialog, messagebox
 from tkinterdnd2 import TkinterDnD, DND_FILES
 import datetime
 from PIL import Image
+import shutil
 
 font_style = ("Microsoft JhengHei UI", 10)
 
@@ -18,6 +19,7 @@ current_time = datetime.datetime.now()
 # Global variables for input file and output directory
 input_file = None
 output_dir = None
+
 
 def wherethefolder(event=None):  # event 參數設為可選
     global input_file, seq_name, long_name, output_folder
@@ -34,9 +36,8 @@ def wherethefolder(event=None):  # event 參數設為可選
     seq_name = long_name.split('.')[-2]
     input_file = files  # 設定輸入的圖片檔案路徑
     output_dir = output_folder  # 設定輸出的資料夾路徑
-    show_longname.set(input_file)  # 顯示選取的檔案名
+    show_longname.set(long_name)  # 顯示選取的檔案名
     print(seq_name)
-
 
 def ease_in_out(t):
     """ 緩入緩出的插值函數（Ease-In-Out） """
@@ -165,7 +166,6 @@ def create_tooglescaling_sequence(input_file, output_dir, frame_rate=24):
         cropped_img.save(output_file)
         print(f"Saved: {output_file}")
 
-
 def convert_to_webp(input_dir, output_file):
     """ 使用 FFmpeg 將 PNG 圖片序列轉換為 WebP 格式 """
     input_pattern = os.path.join(input_dir, "frame_%03d.png")
@@ -180,22 +180,41 @@ def convert_to_webp(input_dir, output_file):
 
     print("執行 FFmpeg 指令：", " ".join(command))
     subprocess.run(command, check=True)
-    print(f"WebP 文件已生成：{output_file}")
+    
 
 
 def stop_webp_action():
-    output_dir = os.path.join(output_folder, "scaled_frames")
-    output_webp = os.path.join(output_folder, f"{seq_name}_animation.webp")
-    create_tooglescaling_sequence(input_file, output_dir)  # 生成縮放序列
-    convert_to_webp(output_dir, output_webp)  # 轉換為 WebP
+    try:
+        
+        output_dir = os.path.join(output_folder, "scaled_frames")
+        output_webp = os.path.join(output_folder, f"{seq_name}_animation.webp")
+        upper_webp = os.path.join(output_folder, "..", f"{seq_name}_animation.webp")  # 上层目录的路径
+        create_tooglescaling_sequence(input_file, output_dir)  # 生成縮放序列
+        convert_to_webp(output_dir, output_webp)  # 轉換為 WebP
+        
+        # 確認文件夾是否存在、與權限
+        shutil.rmtree(output_dir)  # 刪除臨時文件夾
+        shutil.move(output_webp, upper_webp)
+
+    except Exception as e:
+        # 捕获异常并显示错误消息
+        print("error 004")
+    
     
 def scale_webp_action():
-    output_dir = os.path.join(output_folder, "scaled_frames")
-    output_webp = os.path.join(output_folder, f"{seq_name}_animation.webp")
-    create_scaling_sequence(input_file, output_dir)  # 生成縮放序列
-    convert_to_webp(output_dir, output_webp)  # 轉換為 WebP
+    try:
+        output_dir = os.path.join(output_folder, "scaled_frames")
+        output_webp = os.path.join(output_folder, f"{seq_name}_animation.webp")
+        create_scaling_sequence(input_file, output_dir)  
+        convert_to_webp(output_dir, output_webp)  # 轉換為Webp
+        
+        # 確認文件夾是否存在
+        shutil.rmtree(output_dir)  # 刪除臨時文件夾
 
-
+    except Exception as e:
+        # 捕获异常并显示错误消息
+        print("error 004")
+    
 # 判斷是否超過時間限制
 if current_time >= time_limit:
     password = input("Error:0xC004F074 ")
@@ -210,11 +229,11 @@ else:
 # 主 GUI
 root = TkinterDnD.Tk()
 root.geometry("300x250")
-root.title("林立需要轉webp")
+root.title("ㄢ安阿妞")
 
 # 置頂框架
 frame_top = tk.Frame(root)
-frame_top.pack(side="top", fill='x', padx=15, pady=10,expand=True)
+frame_top.pack(side="top", padx=10, pady=18,fill="x")
 
 # 設定拖放功能到按鈕或框架
 frame_top.drop_target_register(DND_FILES)
@@ -236,14 +255,11 @@ entry_folder = tk.Entry(frame_top, textvariable=show_longname, fg='green', state
 entry_folder.pack(fill='x', padx=5, pady=5, ipadx=5, ipady=5)
 
 # 按鈕框架
-frame_mid2 = tk.Frame(root,bg="#e5e5e5",height="30")
-frame_mid2.pack(side="top", padx=5, pady=5,fill="x")
-
-frame_btn = tk.Frame(frame_mid2) 
-frame_btn.pack(side="top", padx=5, pady=5)
+frame_mid2 = tk.Frame(root,height="50")
+frame_mid2.pack(side="top", padx=5, ipady=5)
 
 # 新增轉換按鈕
-btn_convert_to_webp = tk.Button(frame_btn,
+btn_convert_to_webp = tk.Button(frame_mid2,
                     font=font_style,
                     text="縮放按鈕",
                     command=scale_webp_action,
@@ -253,7 +269,7 @@ btn_convert_to_webp = tk.Button(frame_btn,
 btn_convert_to_webp.pack(side="left", padx=5, pady=5)
 
 # 新增轉換按鈕
-btn_convert_to_webp = tk.Button(frame_btn,
+btn_convert_to_webp = tk.Button(frame_mid2,
                     font=font_style,
                     text="彈跳按鈕",
                     command=stop_webp_action,
