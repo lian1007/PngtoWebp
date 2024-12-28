@@ -22,7 +22,7 @@ output_dir = None
 
 
 def wherethefolder(event=None):  # event 參數設為可選
-    global input_file, seq_name, long_name, output_folder
+    global input_file, seq_name, long_name, output_folder,mult_path
     if event:  # 如果是來自拖放事件，使用 event.data
         files = event.data
     else:  # 否則使用檔案對話框
@@ -30,14 +30,17 @@ def wherethefolder(event=None):  # event 參數設為可選
     if not files:  # 如果沒有選擇文件，則返回
         return
     
-    output_folder = os.path.dirname(files)  # 獲取文件所在的資料夾
+    file_folder = os.path.dirname(files)  # 獲取文件所在的資料夾
     Fullpath = files.split('/')  # 分割成多塊的序列
     long_name = Fullpath[-1]  # 完整的檔案名
     seq_name = long_name.split('.')[-2]
     input_file = files  # 設定輸入的圖片檔案路徑
-    output_dir = output_folder  # 設定輸出的資料夾路徑
+    output_dir = file_folder  # 設定輸出的資料夾路徑
     show_longname.set(long_name)  # 顯示選取的檔案名
-    print(seq_name)
+    print(seq_name,file_folder,Fullpath)
+
+    mult_path=files.split()
+    print(mult_path)
 
 def ease_in_out(t):
     """ 緩入緩出的插值函數（Ease-In-Out） """
@@ -184,21 +187,29 @@ def convert_to_webp(input_dir, output_file):
 
 
 def stop_webp_action():
-    try:
-        
-        output_dir = os.path.join(output_folder, "scaled_frames")
-        output_webp = os.path.join(output_folder, f"{seq_name}_animation.webp")
-        upper_webp = os.path.join(output_folder, "..", f"{seq_name}_animation.webp")  # 上层目录的路径
-        create_tooglescaling_sequence(input_file, output_dir)  # 生成縮放序列
-        convert_to_webp(output_dir, output_webp)  # 轉換為 WebP
-        
-        # 確認文件夾是否存在、與權限
-        shutil.rmtree(output_dir)  # 刪除臨時文件夾
-        shutil.move(output_webp, upper_webp)
+    for input_file in mult_path:
+        # 取得文件夾與文件名
+        file_folder = os.path.dirname(input_file)  # 取得當前文件所在資料夾
+        seq_name, _ = os.path.splitext(os.path.basename(input_file))  # 取得文件名（不含副檔名）
 
-    except Exception as e:
-        # 捕获异常并显示错误消息
-        print("error 004")
+        # 生成輸出目錄和 WebP 檔案路徑
+        output_dir = os.path.join(file_folder, "scaled_frames") 
+        output_webp = os.path.join(file_folder, f"{seq_name}_btn.webp")
+
+        try:
+            # 執行縮放序列生成與轉換
+            create_tooglescaling_sequence(input_file, output_dir)  # 生成縮放序列
+            convert_to_webp(output_dir, output_webp)  # 轉換為 WebP
+
+            print(f"成功處理: {input_file}")
+        except Exception as e:
+            print(f"處理失敗: {input_file}, 錯誤訊息: {e}")
+        finally:
+            print("")
+            # # 刪除臨時輸出資料夾
+            # if os.path.exists(output_dir):
+            #     shutil.rmtree(output_dir)
+            #     print(f"已刪除臨時文件夾: {output_dir}")
     
     
 def scale_webp_action():
