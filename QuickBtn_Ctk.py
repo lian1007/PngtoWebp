@@ -2,11 +2,11 @@ import os
 import sys
 import subprocess
 from tkinter import filedialog,messagebox
-from tkinterdnd2 import TkinterDnD, DND_FILES
-import tkinter as tk
 import customtkinter as ctk
+from tkinterdnd2 import TkinterDnD, DND_FILES
 from PIL import Image
 import shutil
+import re
 
 ctk.set_appearance_mode("light")
 font_style = ("Microsoft JhengHei", 12, "bold")
@@ -32,9 +32,10 @@ def open_folder():
         print("資料夾不存在")
 
 def wherethefolder(event=None):  # event 參數設為可選
-    global output_folder,input_files
+    global output_folder, input_files
     if event:  # 拖曳進來的文件
-        files = event.data.strip('{}').split()  # 解析多個檔案
+        files = re.findall(r'\{(.*?)\}|\S+', event.data)  # 使用正則解析檔案名稱
+        files = [f.strip('{}') for f in files]  # 去掉大括號
     else:  # 檔案對話框選擇多個圖片
         files = filedialog.askopenfilenames(filetypes=[('PNG Files', '*.png')])
 
@@ -221,15 +222,19 @@ def stop_webp_action():
     messagebox.showinfo("完成", "所有圖片轉換已完成！")
     open_folder()
 
-root = ctk.CTk()
+root = TkinterDnD.Tk()
 root.geometry("300x220")
 root.title(" 尼縮縮看阿")
 
 # 修改背景色
-root.configure(fg_color='#EDEDF2')
+root.configure(bg="#EDEDF2")
 
 root_frame = ctk.CTkFrame(root, fg_color='#EDEDF2')
 root_frame.pack(fill='x', padx=10, pady=10)
+
+# 讓按鈕支援拖曳檔案
+root_frame.drop_target_register(DND_FILES)
+root_frame.dnd_bind('<<Drop>>', wherethefolder)
 
 image_path = resource_path('Assets/open-folder.png')
 photo = ctk.CTkImage(light_image=Image.open(image_path))
@@ -248,6 +253,8 @@ btn_folderpath = ctk.CTkButton(root_frame,
                 command=wherethefolder,
                 height=35)
 btn_folderpath.pack(padx=5, pady=15)
+
+
 
 # 位置顯示框
 show_longname = ctk.StringVar()  # 建立文字變數
